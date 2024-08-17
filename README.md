@@ -7,11 +7,6 @@ A simple CLI tool to scrape video details from a YouTube playlist.
 - Extract detailed video information and save it in a JSON file.
 - Easy-to-use CLI with clear output options.
 
-## Installation
-
-```bash
-pip install -e .
-```
 
 ## Usage
 ```bash
