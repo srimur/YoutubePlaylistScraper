@@ -12,7 +12,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'playlist-scraper=scraper.cli:main',
+            'playlist-scraper=scraper.cli:cli',
         ],
     },
 )
