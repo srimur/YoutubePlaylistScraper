@@ -10,7 +10,7 @@ A simple CLI tool to scrape video details from a YouTube playlist.
 
 ## Usage
 ```bash
-youtube-scraper scrape --format text
+playlist-scraper scrape --format text
 ```
 After selecting the format, the tool will prompt you to enter the YouTube playlist URL.
 
