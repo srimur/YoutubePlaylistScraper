@@ -1,6 +1,6 @@
 # YouTube Playlist Scraper
 
-A modern CLI tool to scrape video details from a YouTube playlist. 
+A simple CLI tool to scrape video details from a YouTube playlist. 
 
 ## Features
 - Extract video titles and save them in a text file with clickable links.
@@ -22,7 +22,12 @@ After selecting the format, the tool will prompt you to enter the YouTube playli
 ## Steps to Set Up and Use the Project
 
 ### 1. Clone the Repository:
-
+```bash
+git clone https://github.com/srimur/YoutubePlaylistScraper.git
+```
+```bash
+cd YoutubePlaylistScraper
+```
 
 ### 2. Install Dependencies:
 ```bash
