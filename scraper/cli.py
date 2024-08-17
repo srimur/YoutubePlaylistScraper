@@ -5,7 +5,7 @@ from scraper.text_output import output_text
 from scraper.json_output import output_json
 
 def prompt_for_format():
-    """Prompt the user to select an output format using arrow keys."""
+    """Prompt the user to select an output format using a dialog with radio buttons."""
     format_options = [
         ("Text", "text"),
         ("JSON", "json")
