@@ -5,6 +5,7 @@ A simple CLI tool to scrape video details from a YouTube playlist.
 ## Features
 - Extract video titles and save them in a text file along with a table with clickable links.
 - Extract detailed video information and save it in a JSON file.
+- **Output Video Titles as Checklist Hyperlinks for Notion (Copy Paste Markdown) - Use to keep track of videos completed watching**
 - Easy-to-use CLI with clear output options.
 
 ## Demo
