@@ -1,6 +1,7 @@
 # YouTube Playlist Scraper
 
 A simple CLI tool to scrape video details from a YouTube playlist. 
+(New - Notion Checklist Mardown as Output)
 
 ## Features
 - Extract video titles and save them in a text file along with a table with clickable links.
