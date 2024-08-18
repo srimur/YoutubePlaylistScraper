@@ -2,7 +2,7 @@ import click
 from scraper.utils import get_video_details
 from scraper.text_output import output_text
 from scraper.json_output import output_json
-from scraper.output_notion import output_notion
+from scraper.notion_output import output_notion
 
 def choose_format():
     """Prompt the user to select an output format using click options."""
