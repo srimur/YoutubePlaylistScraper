@@ -3,7 +3,7 @@
 A simple CLI tool to scrape video details from a YouTube playlist. 
 
 ## Features
-- Extract video titles and save them in a text file with clickable links.
+- Extract video titles and save them in a text file along with a table with clickable links.
 - Extract detailed video information and save it in a JSON file.
 - Easy-to-use CLI with clear output options.
 
