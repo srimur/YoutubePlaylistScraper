@@ -9,6 +9,7 @@ setup(
         'click',
         'rich',
         'pytube',
+        'pyperclip'
     ],
     entry_points={
         'console_scripts': [
