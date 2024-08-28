@@ -1,17 +1,7 @@
 # YouTube Playlist Scraper
 
-<br>
- __    __  ______  ____                                                               
-/\ \  /\ \/\__  _\/\  _`\                                                             
-\ `\`\\/'/\/_/\ \/\ \ \L\ \____    ___   _ __    __     _____   _____      __   _ __  
- `\ `\ /'    \ \ \ \ \ ,__/',__\  /'___\/\`'__\/'__`\  /\ '__`\/\ '__`\  /'__`\/\`'__\
-   `\ \ \     \ \ \ \ \ \/\__, `\/\ \__/\ \ \//\ \L\.\_\ \ \L\ \ \ \L\ \/\  __/\ \ \/ 
-     \ \_\     \ \_\ \ \_\/\____/\ \____\\ \_\\ \__/.\_\\ \ ,__/\ \ ,__/\ \____\\ \_\ 
-      \/_/      \/_/  \/_/\/___/  \/____/ \/_/ \/__/\/_/ \ \ \/  \ \ \/  \/____/ \/_/ 
-                                                          \ \_\   \ \_\               
-                                                           \/_/    \/_/               
+<img width="442" alt="Screenshot 2024-08-28 154754" src="https://github.com/user-attachments/assets/a0fb3a8c-9f93-4bf1-a52a-61476e6a0489">
 
-<br>
 A simple CLI tool to scrape video details from a YouTube playlist. 
 (New - Notion Checklist Mardown as Output)
 
