@@ -16,8 +16,6 @@ A simple CLI tool to scrape video details from a YouTube playlist.
 ![gif11](https://github.com/user-attachments/assets/962086dd-35fc-408d-a77e-1676bd56ca24)
 
 ### Notion Markdown Output (Copies to Clipboard)
-<img width="860" alt="image" src="https://github.com/user-attachments/assets/7a08104e-60de-4042-9df0-60f3ec366d33">
-<br>
 
 - The Markdown automatically gets copied to clipboard (or you can manually copy it from the output provided)
 - Paste the Markdown in you Notion Page
