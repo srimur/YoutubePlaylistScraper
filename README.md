@@ -1,6 +1,6 @@
 # YouTube Playlist Scraper
+<img width="640" alt="Screenshot 2024-08-28 154754" src="https://github.com/user-attachments/assets/f0bde10c-0a71-43f6-9b85-b12027213dfe">
 
-<img width="600" alt="Screenshot 2024-08-28 154754" src="https://github.com/user-attachments/assets/a0fb3a8c-9f93-4bf1-a52a-61476e6a0489">
 <br>
 A simple CLI tool to scrape video details from a YouTube playlist. 
 (New - Notion Checklist Mardown as Output)
