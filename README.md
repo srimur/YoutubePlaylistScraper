@@ -3,7 +3,7 @@
 
 <br>
 A simple CLI tool to scrape video details from a YouTube playlist. 
-(New - Notion Checklist Mardown as Output)
+Keep track of what you're watching/get details about playlists from your terminal.
 
 ## Features
 - Extract video titles and save them in a text file along with a table with clickable links.
