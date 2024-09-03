@@ -3,7 +3,6 @@ from scraper.utils import get_video_details
 from scraper.text_output import output_text
 from scraper.json_output import output_json
 from scraper.notion_output import output_notion
-import asyncio
 from concurrent.futures import ThreadPoolExecutor
 
 def custom_theme():
@@ -60,7 +59,7 @@ def choose_format():
 
 @cli.command()
 @click.option('--format', '-f', type=str, help='Choose the output format (text, json, or notion). If not provided, you will be prompted to choose.')
-async def scrape(format):
+def scrape(format):
     """🔍 Scrape video details from a YouTube playlist."""
     if format is None:
         format = choose_format()
@@ -72,7 +71,7 @@ async def scrape(format):
     url = click.prompt(click.style('Please enter the YouTube playlist URL', **custom_theme()['input'], bold=True), type=str)
     
     with ThreadPoolExecutor() as executor:
-        video_details = await asyncio.get_event_loop().run_in_executor(executor, get_video_details, url)
+        video_details = executor.submit(get_video_details, url).result()
 
     format_map = {
         'json': ('\n🎉 Outputting in JSON format...\n', output_json),
