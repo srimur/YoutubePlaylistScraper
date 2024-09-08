@@ -57,6 +57,9 @@ pip install -r requirements.txt
 ```bash
 pip install -e .
 ```
+## License
+
+This project is licensed under the [MIT License](LICENSE). See the `LICENSE` file for details.
 
 
 
