@@ -27,7 +27,7 @@ import logging
 import re
 import time
 from dataclasses import dataclass
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 
 import requests
 
@@ -81,7 +81,38 @@ class NotionApiExporter:
 
     # -- public -------------------------------------------------------------
 
-    def export(self, playlist: Playlist) -> ExportResult:
+    def validate_access(self) -> None:
+        """Confirm the integration can reach the configured page or database.
+
+        Run this *before* a long scrape so a misconfigured Notion setup fails
+        in 1 second instead of 30+. Raises ``NotionError`` on any access
+        failure — the interactive layer translates the message into a fix hint.
+        """
+        if self._cfg.database_id:
+            path = f"/databases/{self._cfg.database_id}"
+            label = "database"
+        elif self._cfg.parent_page_id:
+            path = f"/pages/{self._cfg.parent_page_id}"
+            label = "page"
+        else:
+            raise NotionError("no parent page or database id configured")
+
+        url = f"{_API}{path}"
+        try:
+            r = self._session.get(url, timeout=_HTTP_TIMEOUT)
+        except requests.RequestException as e:
+            raise NotionError(f"GET {path} failed: {e}") from e
+
+        if not r.ok:
+            msg = _safe_error_message(r)
+            raise NotionError(f"GET {path} ({label}) -> {r.status_code}: {msg}")
+
+    def export(
+        self,
+        playlist: Playlist,
+        *,
+        progress_cb: Callable[[int, int, Video], None] | None = None,
+    ) -> ExportResult:
         db_id = self._cfg.database_id or self._create_database(playlist.title)
         existing = self._index_existing_rows(db_id)
 
@@ -91,7 +122,11 @@ class NotionApiExporter:
         # first — so creating rows in forward order puts position 1 at the
         # bottom. Insert in reverse so the default view reads 1 → N.
         # (Existing rows get updated by id regardless of order.)
-        for v in reversed(playlist.videos):
+        items = list(reversed(playlist.videos))
+        total = len(items)
+        for i, v in enumerate(items, start=1):
+            if progress_cb is not None:
+                progress_cb(i, total, v)
             page_id = existing.get(v.video_id)
             if page_id:
                 self._update_row(page_id, v)

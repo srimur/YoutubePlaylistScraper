@@ -75,10 +75,12 @@ def run() -> int:
         return _run()
     except KeyboardInterrupt:
         print("\ncancelled", file=sys.stderr)
-        return 130
+        return30
 
 
 def _run() -> int:
+    _print_banner()
+
     url = _prompt_url()
     if url is None:
         return _cancel()
@@ -87,27 +89,96 @@ def _run() -> int:
     if target is None:
         return _cancel()
 
-    cfg = AppConfig.load()
+    # Setup + pre-flight loop. If the pre-flight fails (e.g. Notion integration
+    # not yet connected to the page), surface the fix and let the user retry
+    # without losing the URL/target they already picked.
+    exporter = None
+    while True:
+        cfg = AppConfig.load()
+        exporter = _setup_target(target, cfg)
+        if exporter is None:
+            return _cancel()
 
-    exporter = _setup_target(target, cfg)
-    if exporter is None:
-        return _cancel()
+        try:
+            _preflight(exporter)
+            break
+        except Exception as e:  # noqa: BLE001
+            _print_friendly_error(e)
+            if not _confirm("Try again after fixing it?", default=True):
+                return
+            print()
 
-    # Import scraper lazily: keeps `plp` (no args) responsive on slow boxes
-    # and mirrors cli.main's own laziness.
+    # Scrape — single shot, errors are usually about the URL itself.
     from .core.scraper import scrape_playlist
 
     try:
         print(f"\nscraping {url} ...")
         playlist = scrape_playlist(url)
-        print(f"found {len(playlist)} videos in {playlist.title!r}. exporting ...")
-        result = exporter.export(playlist)
-    except Exception as e:  # noqa: BLE001  surface friendly errors, no tracebacks
-        return _report_error(e)
+    except Exception as e:  # noqa: BLE001
+        _print_friendly_error(e)
+        return
+
+    by = f" by {playlist.channel}" if playlist.channel else ""
+    print(f"  found {len(playlist)} videos in {playlist.title!r}{by}.\n")
+
+    # Export with retry-after-fix loop. Same idea as pre-flight: any transient
+    # or fixable failure surfaces a hint and offers a retry instead of bailing.
+    result: ExportResult | None = None
+    while True:
+        try:
+            kwargs: dict = {}
+            if _exporter_accepts_progress(exporter):
+                kwargs["progress_cb"] = _progress_callback
+            print("exporting ...")
+            result = exporter.export(playlist, **kwargs)
+            break
+        except Exception as e:  # noqa: BLE001
+            _print_friendly_error(e)
+            if not _confirm("Try the export again after fixing it?", default=True):
+                return
+            print()
 
     _print_result(result)
     _offer_open(result)
     return 0
+
+
+def _print_banner() -> None:
+    print()
+    print("  playlistpipe — YouTube playlist → Notion / Obsidian / Anki")
+    print("  press Ctrl+C at any prompt to cancel.")
+    print()
+
+
+def _preflight(exporter) -> None:
+    """Run any cheap pre-flight checks the exporter exposes.
+
+    Today only NotionApiExporter has a ``validate_access`` method — it does
+    a single GET against the configured page or database to confirm the
+    integration is connected before we spend 30 seconds scraping.
+    """
+    check = getattr(exporter, "validate_access", None)
+    if callable(check):
+        print("  verifying access ...", end="", flush=True)
+        check()
+        print(" ok.")
+
+
+def _exporter_accepts_progress(exporter: object) -> bool:
+    """True if ``exporter.export`` takes a ``progress_cb`` kwarg."""
+    import inspect
+    try:
+        sig = inspect.signature(exporter.export)  # type: ignore[attr-defined]
+    except (TypeError, ValueError):
+        return False
+    return "progress_cb" in sig.parameters
+
+
+def _progress_callback(done: int, total: int, video) -> None:
+    """Print ``[ 12/100] Title`` per row. Right-aligned counter so it doesn't jitter."""
+    width = len(str(total))
+    title = video.title if len(video.title) <= 60 else video.title[:57] + "..."
+    print(f"  [{done:>{width}}/{total}] {title}")
 
 
 # --- prompts ----------------------------------------------------------------
@@ -166,7 +237,9 @@ def _setup_target(target: str, cfg: AppConfig):  # -> Exporter | None
 
 def _setup_notion_api(cfg: AppConfig) -> NotionApiExporter | None:
     token = cfg.notion_token
-    if not token:
+    if token:
+        print("  ✓ using Notion token from config")
+    else:
         print(
             "\nYou'll need a Notion integration token.\n"
             "  Open https://www.notion.so/my-integrations, create a new\n"
@@ -184,7 +257,11 @@ def _setup_notion_api(cfg: AppConfig) -> NotionApiExporter | None:
     parent = cfg.notion_default_parent
     database = cfg.notion_default_database
 
-    if not database and not parent:
+    if database:
+        print(f"  ✓ using saved database id: {_short_id(database)}")
+    elif parent:
+        print(f"  ✓ using saved parent page: {_short_id(parent)}")
+    else:
         print(
             "\nNotion needs a parent page to create the new database under.\n"
             "  The parent page ID is the last 32-char chunk of your page's URL\n"
@@ -246,7 +323,9 @@ def _setup_notion_md(cfg: AppConfig) -> NotionMarkdownExporter | None:
 def _setup_obsidian(cfg: AppConfig) -> ObsidianExporter | None:
     vault = cfg.obsidian_vault if cfg.obsidian_vault and cfg.obsidian_vault.is_dir() else None
 
-    if vault is None:
+    if vault is not None:
+        print(f"  ✓ using saved vault: {vault}")
+    else:
         vault = _prompt_existing_dir("Path to your Obsidian vault:")
         if vault is None:
             return None
@@ -299,6 +378,19 @@ def _confirm(message: str, *, default: bool) -> bool:
     return bool(answer)
 
 
+def _short_id(s: str) -> str:
+    """Shorten a 32-char Notion id to ``abc12345…789``-ish for display.
+
+    We never display the full id back to the user — they already have it,
+    showing it again is just clutter, and a truncated form makes "is this
+    the right one?" obvious at a glance.
+    """
+    s = s.replace("-", "")
+    if len(s) <= 12:
+        return s
+    return f"{s[:6]}…{s[-4:]}"
+
+
 def _try_save(updates: dict) -> None:
     try:
         path = AppConfig.save(updates)
@@ -340,13 +432,12 @@ def _cancel() -> int:
     return 130
 
 
-def _report_error(e: BaseException) -> int:
-    """Turn an exception raised during scrape/export into a friendly message.
+def _print_friendly_error(e: BaseException) -> None:
+    """Print a human-readable diagnostic + fix hint for a known failure mode.
 
-    The goal is that a user who ran ``plp`` from a GUI terminal never sees a
-    traceback — they see one line stating what broke and one line stating how
-    to fix it. Set ``PLAYLISTPIPE_DEBUG=1`` to re-raise and get the full trace
-    when filing a bug report.
+    Caller decides whether to retry or exit; this function only writes to
+    stderr. ``PLAYLISTPIPE_DEBUG=1`` re-raises so a bug report can include
+    the full traceback.
     """
     if os.environ.get("PLAYLISTPIPE_DEBUG"):
         raise e
@@ -389,7 +480,7 @@ def _report_error(e: BaseException) -> int:
                 "  happening, open an issue with the message above.",
                 file=sys.stderr,
             )
-        return 1
+        return
 
     if isinstance(e, ScraperError):
         print(f"\nerror: couldn't scrape the playlist.\n  {msg}", file=sys.stderr)
@@ -411,7 +502,7 @@ def _report_error(e: BaseException) -> int:
                 "  YouTube occasionally rate-limits scrapers from residential IPs.",
                 file=sys.stderr,
             )
-        return 1
+        return
 
     if isinstance(e, PermissionError):
         print(f"\nerror: permission denied.\n  {msg}", file=sys.stderr)
@@ -420,7 +511,7 @@ def _report_error(e: BaseException) -> int:
             "  is writable and not open in another program.",
             file=sys.stderr,
         )
-        return 1
+        return
 
     if isinstance(e, FileNotFoundError):
         print(f"\nerror: file or directory not found.\n  {msg}", file=sys.stderr)
@@ -429,21 +520,21 @@ def _report_error(e: BaseException) -> int:
             f"    {CONFIG_PATH}",
             file=sys.stderr,
         )
-        return 1
+        return
 
     if isinstance(e, OSError):
         print(f"\nerror: filesystem problem.\n  {msg}", file=sys.stderr)
         print("\n  check disk space and that the output directory is writable.", file=sys.stderr)
-        return 1
+        return
 
     if isinstance(e, ValueError):
         # Bad config shape, path traversal attempt, etc.
         print(f"\nerror: invalid input.\n  {msg}", file=sys.stderr)
-        return 1
+        return
 
     if isinstance(e, RuntimeError):
         print(f"\nerror: {msg}", file=sys.stderr)
-        return 1
+        return
 
     # Fallback — unknown exception. Name the class so a bug report is useful,
     # but still no traceback in the default output.
@@ -453,4 +544,3 @@ def _report_error(e: BaseException) -> int:
         "  open an issue at https://github.com/srimur/playlistpipe/issues",
         file=sys.stderr,
     )
-    return 1
